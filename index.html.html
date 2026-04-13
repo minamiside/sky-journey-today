@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sky Journey Today</title>
+
+<link rel="manifest" href="manifest.json">
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+<style>
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  background: #E8EEF3;
+  color: #333;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  font-size: 14px;
+}
+.container { max-width: 480px; margin: 0 auto; }
+.section { margin-bottom: 48px; }
+.photo-wrapper { position: relative; }
+.photo {
+  width: 100%;
+  display: block;
+  cursor: pointer;
+  filter: saturate(1.08) contrast(1.05);
+}
+.date {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 12px;
+  color: rgba(0,0,0,0.5);
+}
+.caption { margin-top: 10px; font-size: 13px; }
+.quote { margin-top: 10px; font-size: 12px; color: #666; }
+.save-btn {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.footer {
+  text-align: center;
+  padding: 40px;
+  font-size: 11px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div>Sky Journey Today ✈</div>
+  <a href="favorites.html">Favorites</a>
+</div>
+
+<div class="container" id="app"></div>
+
+<div class="footer">© Sky Journey Today</div>
+
+<script>
+function getToday() {
+  const d = new Date();
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* 🌍 GPS */
+async function getLocation() {
+  return new Promise(resolve => {
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      () => resolve({ lat: 35.68, lon: 139.76 })
+    );
+  });
+}
+
+/* 🌤 天気 */
+async function getWeather() {
+  const { lat, lon } = await getLocation();
+  const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+  const data = await res.json();
+  return data.current_weather.weathercode;
+}
+
+/* 🌌 クエリ */
+async function getFinalQuery() {
+  const hour = new Date().getHours();
+  const weather = await getWeather();
+
+  let time = hour < 8 ? "dawn sunrise" :
+             hour < 16 ? "clear sky" :
+             hour < 19 ? "sunset twilight" :
+             "blue hour night sky";
+
+  let w = weather === 0 ? "clear sky" :
+          weather <= 3 ? "cloudy sky" :
+          weather >= 51 ? "rainy sky" :
+          "sky";
+
+  return `${time} ${w}`;
+}
+
+/* 📡 API */
+async function fetchPhotos() {
+  const query = encodeURIComponent(await getFinalQuery());
+  const res = await fetch(`/api/unsplash?query=${query}`);
+  const data = await res.json();
+  return data.results;
+}
+
+/* 💾 保存 */
+function savePhoto(photo) {
+  let saved = JSON.parse(localStorage.getItem("favorites") || "[]");
+
+  if (saved.find(p => p.url === photo.urls.regular)) {
+    alert("保存済み");
+    return;
+  }
+
+  saved.push({
+    url: photo.urls.regular
+  });
+
+  localStorage.setItem("favorites", JSON.stringify(saved));
+  alert("保存しました");
+}
+
+/* 描画 */
+async function render() {
+  const app = document.getElementById("app");
+  const photos = await fetchPhotos();
+
+  window.currentPhotos = photos;
+
+  app.innerHTML = photos.map((p,i)=>`
+    <div class="section">
+      <div class="photo-wrapper">
+        <img src="${p.urls.regular}" class="photo">
+        <div class="date">${getToday()}</div>
+      </div>
+      <div class="caption">静かな空の時間</div>
+      <div class="quote">${p.user.name}</div>
+      <button class="save-btn" data-i="${i}">♡ Save</button>
+    </div>
+  `).join("");
+}
+
+document.addEventListener("click", e=>{
+  if(e.target.classList.contains("save-btn")){
+    savePhoto(window.currentPhotos[e.target.dataset.i]);
+  }
+});
+
+render();
+setInterval(render, 1800000);
+</script>
+
+</body>
+</html>
