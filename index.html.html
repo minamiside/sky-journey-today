@@ -148,7 +148,10 @@ async function render() {
         <div class="date">${getToday()}</div>
       </div>
       <div class="caption">静かな空の時間</div>
-      <div class="quote">${p.user.name}</div>
+      <div class="quote" style="opacity:0.6">
+  Photo by ${p.user.name} on 
+  <a href="https://unsplash.com" target="_blank">Unsplash</a>
+</div>
       <button class="save-btn" data-i="${i}">♡ Save</button>
     </div>
   `).join("");
