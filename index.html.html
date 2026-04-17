@@ -6,7 +6,6 @@
   <meta name="theme-color" content="#E8EEF3">
   <meta name="description" content="空を見るためだけの、静かなアプリ">
   <title>Sky Journey Today</title>
-  <!-- manifest.json は http/https サーバー上でのみ有効（file://では不要） -->
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +13,7 @@
 </head>
 <body>
 
-  <!-- ===================== HEADER ===================== -->
+  <!-- HEADER -->
   <header>
     <a class="logo" href="#" id="logoLink">
       <span>✈</span> Sky Journey Today
@@ -25,36 +24,40 @@
     </nav>
   </header>
 
-  <!-- ===================== MAIN PAGE ===================== -->
+  <!-- MAIN PAGE -->
   <main id="page-main">
-    <section class="slider-section">
 
+    <!-- スライダー -->
+    <section class="slider-section">
       <div class="slider-wrapper" id="sliderWrapper">
-        <div class="slider-track" id="sliderTrack">
-          <!-- slides injected by JS -->
-        </div>
-        <!-- 矢印：photo-frameに重ねて表示（app.jsで各スライドに挿入） -->
+        <div class="slider-track" id="sliderTrack"></div>
         <button class="slide-arr slide-arr--prev" id="prevBtn" aria-label="前へ">&#8592;</button>
         <button class="slide-arr slide-arr--next" id="nextBtn" aria-label="次へ">&#8594;</button>
       </div>
-
       <div class="slider-controls">
         <div class="dots" id="dots"></div>
       </div>
-
       <p class="swipe-hint">swipe to explore</p>
       <button class="refresh-btn" id="refreshBtn">↺ &nbsp; refresh sky</button>
-
     </section>
 
     <div class="spacer"><div class="spacer-line"></div></div>
 
-    <section class="quotes-section" id="quotesSection">
-      <!-- quote blocks injected by JS -->
+    <!-- 今日のひとこと -->
+    <section class="today-section" id="todaySection">
+      <!-- injected by JS -->
     </section>
+
+    <div class="spacer"><div class="spacer-line"></div></div>
+
+    <!-- スクロール名言 -->
+    <section class="quotes-section" id="quotesSection">
+      <!-- injected by JS -->
+    </section>
+
   </main>
 
-  <!-- ===================== FAVORITES PAGE ===================== -->
+  <!-- FAVORITES PAGE -->
   <div id="page-favorites">
     <div class="page-header">
       <h2>Favorites</h2>
@@ -63,21 +66,13 @@
     <div class="fav-grid" id="favGrid"></div>
   </div>
 
-  <!-- ===================== ABOUT PAGE ===================== -->
+  <!-- ABOUT PAGE -->
   <div id="page-about">
     <div class="about-content">
       <h2>空を見るためだけの、<br>静かなアプリ。</h2>
-      <p>
-        Sky Journey Today は、情報でもSNSでもなく、<br>
-        ただ空を眺めるための場所です。
-      </p>
-      <p>
-        朝焼け、ブルーアワー、夕暮れ——<br>
-        世界のどこかの空の断片を、静かに届けます。
-      </p>
-      <p>
-        スクロールして、息をして、空を見てください。
-      </p>
+      <p>Sky Journey Today は、情報でもSNSでもなく、<br>ただ空を眺めるための場所です。</p>
+      <p>朝焼け、ブルーアワー、夕暮れ——<br>世界のどこかの空の断片を、静かに届けます。</p>
+      <p>スクロールして、息をして、空を見てください。</p>
       <div class="about-tags">
         <span class="tag">blue hour</span>
         <span class="tag">dawn</span>
@@ -89,13 +84,13 @@
     </div>
   </div>
 
-  <!-- ===================== LIGHTBOX ===================== -->
+  <!-- LIGHTBOX -->
   <div class="lightbox" id="lightbox">
     <button class="lightbox-close" id="lightboxClose">&#215;</button>
     <img id="lightboxImg" src="" alt="sky">
   </div>
 
-  <!-- ===================== TOAST ===================== -->
+  <!-- TOAST -->
   <div class="toast" id="toast"></div>
 
   <script src="content.js"></script>
