@@ -1,171 +1,104 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sky Journey Today</title>
-
-<link rel="manifest" href="manifest.json">
-
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
-}
-</script>
-
-<style>
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  background: #E8EEF3;
-  color: #333;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  padding: 16px;
-  font-size: 14px;
-}
-.container { max-width: 480px; margin: 0 auto; }
-.section { margin-bottom: 48px; }
-.photo-wrapper { position: relative; }
-.photo {
-  width: 100%;
-  display: block;
-  cursor: pointer;
-  filter: saturate(1.08) contrast(1.05);
-}
-.date {
-  position: absolute;
-  top: 10px;
-  left: 12px;
-  font-size: 12px;
-  color: rgba(0,0,0,0.5);
-}
-.caption { margin-top: 10px; font-size: 13px; }
-.quote { margin-top: 10px; font-size: 12px; color: #666; }
-.save-btn {
-  margin-top: 8px;
-  font-size: 12px;
-}
-.footer {
-  text-align: center;
-  padding: 40px;
-  font-size: 11px;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#E8EEF3">
+  <meta name="description" content="空を見るためだけの、静かなアプリ">
+  <title>Sky Journey Today</title>
+  <!-- manifest.json は http/https サーバー上でのみ有効（file://では不要） -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet">
 </head>
-
 <body>
 
-<div class="header">
-  <div>Sky Journey Today ✈</div>
-  <a href="favorites.html">Favorites</a>
-</div>
+  <!-- ===================== HEADER ===================== -->
+  <header>
+    <a class="logo" href="#" id="logoLink">
+      <span>✈</span> Sky Journey Today
+    </a>
+    <nav>
+      <a href="#" id="navFavorites">Favorites</a>
+      <a href="#" id="navAbout">About</a>
+    </nav>
+  </header>
 
-<div class="container" id="app"></div>
+  <!-- ===================== MAIN PAGE ===================== -->
+  <main id="page-main">
+    <section class="slider-section">
 
-<div class="footer">© Sky Journey Today</div>
-
-<script>
-function getToday() {
-  const d = new Date();
-  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-}
-
-/* 🌍 GPS */
-async function getLocation() {
-  return new Promise(resolve => {
-    navigator.geolocation.getCurrentPosition(
-      pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-      () => resolve({ lat: 35.68, lon: 139.76 })
-    );
-  });
-}
-
-/* 🌤 天気 */
-async function getWeather() {
-  const { lat, lon } = await getLocation();
-  const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
-  const data = await res.json();
-  return data.current_weather.weathercode;
-}
-
-/* 🌌 クエリ */
-async function getFinalQuery() {
-  const hour = new Date().getHours();
-  const weather = await getWeather();
-
-  let time = hour < 8 ? "dawn sunrise" :
-             hour < 16 ? "clear sky" :
-             hour < 19 ? "sunset twilight" :
-             "blue hour night sky";
-
-  let w = weather === 0 ? "clear sky" :
-          weather <= 3 ? "cloudy sky" :
-          weather >= 51 ? "rainy sky" :
-          "sky";
-
-  return `${time} ${w}`;
-}
-
-/* 📡 API */
-async function fetchPhotos() {
-  const query = encodeURIComponent(await getFinalQuery());
-  const res = await fetch(`/api/unsplash?query=${query}`);
-  const data = await res.json();
-  return data.results;
-}
-
-/* 💾 保存 */
-function savePhoto(photo) {
-  let saved = JSON.parse(localStorage.getItem("favorites") || "[]");
-
-  if (saved.find(p => p.url === photo.urls.regular)) {
-    alert("保存済み");
-    return;
-  }
-
-  saved.push({
-    url: photo.urls.regular
-  });
-
-  localStorage.setItem("favorites", JSON.stringify(saved));
-  alert("保存しました");
-}
-
-/* 描画 */
-async function render() {
-  const app = document.getElementById("app");
-  const photos = await fetchPhotos();
-
-  window.currentPhotos = photos;
-
-  app.innerHTML = photos.map((p,i)=>`
-    <div class="section">
-      <div class="photo-wrapper">
-        <img src="${p.urls.regular}" class="photo">
-        <div class="date">${getToday()}</div>
+      <div class="slider-wrapper" id="sliderWrapper">
+        <div class="slider-track" id="sliderTrack">
+          <!-- slides injected by JS -->
+        </div>
+        <!-- 矢印：photo-frameに重ねて表示（app.jsで各スライドに挿入） -->
+        <button class="slide-arr slide-arr--prev" id="prevBtn" aria-label="前へ">&#8592;</button>
+        <button class="slide-arr slide-arr--next" id="nextBtn" aria-label="次へ">&#8594;</button>
       </div>
-      <div class="caption">静かな空の時間</div>
-      <div class="quote" style="opacity:0.6">
-  Photo by ${p.user.name} on 
-  <a href="https://unsplash.com" target="_blank">Unsplash</a>
-</div>
-      <button class="save-btn" data-i="${i}">♡ Save</button>
+
+      <div class="slider-controls">
+        <div class="dots" id="dots"></div>
+      </div>
+
+      <p class="swipe-hint">swipe to explore</p>
+      <button class="refresh-btn" id="refreshBtn">↺ &nbsp; refresh sky</button>
+
+    </section>
+
+    <div class="spacer"><div class="spacer-line"></div></div>
+
+    <section class="quotes-section" id="quotesSection">
+      <!-- quote blocks injected by JS -->
+    </section>
+  </main>
+
+  <!-- ===================== FAVORITES PAGE ===================== -->
+  <div id="page-favorites">
+    <div class="page-header">
+      <h2>Favorites</h2>
+      <p>saved skies</p>
     </div>
-  `).join("");
-}
+    <div class="fav-grid" id="favGrid"></div>
+  </div>
 
-document.addEventListener("click", e=>{
-  if(e.target.classList.contains("save-btn")){
-    savePhoto(window.currentPhotos[e.target.dataset.i]);
-  }
-});
+  <!-- ===================== ABOUT PAGE ===================== -->
+  <div id="page-about">
+    <div class="about-content">
+      <h2>空を見るためだけの、<br>静かなアプリ。</h2>
+      <p>
+        Sky Journey Today は、情報でもSNSでもなく、<br>
+        ただ空を眺めるための場所です。
+      </p>
+      <p>
+        朝焼け、ブルーアワー、夕暮れ——<br>
+        世界のどこかの空の断片を、静かに届けます。
+      </p>
+      <p>
+        スクロールして、息をして、空を見てください。
+      </p>
+      <div class="about-tags">
+        <span class="tag">blue hour</span>
+        <span class="tag">dawn</span>
+        <span class="tag">twilight</span>
+        <span class="tag">sunset</span>
+        <span class="tag">minimal</span>
+        <span class="tag">quiet</span>
+      </div>
+    </div>
+  </div>
 
-render();
-setInterval(render, 1800000);
-</script>
+  <!-- ===================== LIGHTBOX ===================== -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightboxClose">&#215;</button>
+    <img id="lightboxImg" src="" alt="sky">
+  </div>
 
+  <!-- ===================== TOAST ===================== -->
+  <div class="toast" id="toast"></div>
+
+  <script src="content.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
