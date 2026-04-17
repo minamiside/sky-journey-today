@@ -50,7 +50,8 @@ async function init() {
   setupNavigation();
   setupLightbox();
   setupRefreshButton();
-  renderScrollQuotes();   // ← 内部でinitQuoteObserverも呼ぶ
+  renderTodayContent();    // 今日のひとこと
+  renderAllQuotes();    // 内部でinitQuoteObserverも呼ぶ
   registerServiceWorker();
 
   renderSliderSkeletons(CONFIG.SLIDE_COUNT);
@@ -406,48 +407,113 @@ function setupRefreshButton() {
 }
 
 // =====================
+// 今日のひとこと
+// =====================
+function renderTodayContent() {
+  var section = document.getElementById('todaySection');
+  if (!section) return;
+
+  var content = window.getTodayContent();
+  var now = new Date();
+  var dateStr = now.toLocaleDateString('ja-JP', {
+    year: 'numeric', month: 'long', day: 'numeric', weekday: 'short'
+  });
+
+  var translationHTML = content.subText
+    ? '<p class="today-translation">' + content.subText + '</p>'
+    : '';
+  var authorHTML = content.author
+    ? '<p class="today-author">— ' + content.author + '</p>'
+    : '';
+
+  section.innerHTML =
+    '<div class="today-card" id="todayCard">' +
+      '<span class="today-label">' + content.label + '</span>' +
+      '<p class="today-main">' + content.mainText + '</p>' +
+      translationHTML +
+      authorHTML +
+      '<p class="today-date">' + dateStr + '</p>' +
+    '</div>';
+
+  // スクロール監視
+  var card = document.getElementById('todayCard');
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0 });
+
+  var rect = card.getBoundingClientRect();
+  if (rect.top < window.innerHeight && rect.bottom > 0) {
+    card.classList.add('visible');
+  } else {
+    observer.observe(card);
+  }
+}
+
+// =====================
 // SCROLL QUOTES (下部セクション)
 // =====================
-function renderScrollQuotes() {
+function renderAllQuotes() {
   const section = document.getElementById('quotesSection');
   if (!section) return;
 
-  section.innerHTML = window.SCROLL_QUOTES
-    .map((q, i) => {
-      const translationHTML = q.translation
-        ? `<p class="translation">${q.translation}</p>`
-        : '';
-      return `
-        <div class="quote-block">
-          <span class="q-label">${q.label}</span>
-          <p>${q.text.replace(/\n/g, '<br>')}</p>
-          ${translationHTML}
-          <cite>${q.cite}</cite>
-        </div>
-        ${i < window.SCROLL_QUOTES.length - 1
-          ? '<div class="spacer"><div class="spacer-line"></div></div>'
-          : ''}`;
-    })
-    .join('');
+  const categories = [
+    { key: 'history', label: '今日のできごと', pool: window.HISTORY_EVENTS },
+    { key: 'philosophy', label: '哲学の言葉', pool: window.PHILOSOPHY_QUOTES },
+    { key: 'sky_fact', label: '空の豆知識', pool: window.SKY_FACTS },
+    { key: 'haiku', label: '空の俳句', pool: window.HAIKU_LIST },
+  ];
 
-  // DOM生成直後にobserver登録
+  const now = new Date();
+  const seedBase = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+
+  function seededRand(s) {
+    const x = Math.sin(s + 1) * 10000;
+    return x - Math.floor(x);
+  }
+
+  const html = categories.map((cat, index) => {
+    const pool = cat.pool;
+    const seed = seedBase + index;
+    const item = pool[Math.floor(seededRand(seed) * pool.length)];
+
+    const translationHTML = item.translation
+      ? `<p class="translation">${item.translation}</p>`
+      : '';
+
+    return `
+      <div class="quote-block">
+        <span class="q-label">${cat.label}</span>
+        <p>${item.text.replace(/\n/g, '<br>')}</p>
+        ${translationHTML}
+        ${item.author ? `<cite>${item.author}</cite>` : ''}
+      </div>
+      <div class="spacer"><div class="spacer-line"></div></div>
+    `;
+  }).join('');
+
+  section.innerHTML = html;
+
+  // ここで observer を登録
   initQuoteObserver();
 }
 
 function initQuoteObserver() {
-  // threshold:0 → 1pxでも見えたら発火
   const observer = new IntersectionObserver(
     entries => entries.forEach(e => {
       if (e.isIntersecting) {
         e.target.classList.add('visible');
-        observer.unobserve(e.target); // 一度発火したら解除
+        observer.unobserve(e.target);
       }
     }),
     { threshold: 0 }
   );
 
   document.querySelectorAll('.quote-block').forEach(el => {
-    // すでにビューポート内に入っている要素は即座にvisibleにする
     const rect = el.getBoundingClientRect();
     if (rect.top < window.innerHeight && rect.bottom > 0) {
       el.classList.add('visible');
@@ -523,3 +589,5 @@ window.showPage        = showPage;
 // START
 // =====================
 init();
+renderAllQuotes();
+
